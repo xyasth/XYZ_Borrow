@@ -64,7 +64,6 @@ class DatabaseSeeder extends Seeder
         $proyektor = Peralatan::create([
             'kode_alat' => 'PRJ-001',
             'nama_alat' => 'Proyektor Epson',
-            'stok' => 5, // Stok saat ini (dinamis)
             'total_aset' => 5,
             'kategori' => 'Elektronik',
         ]);
@@ -72,7 +71,6 @@ class DatabaseSeeder extends Seeder
         $kamera = Peralatan::create([
             'kode_alat' => 'CAM-001',
             'nama_alat' => 'Kamera Sony Mirrorless',
-            'stok' => 3,
             'total_aset' => 3,
             'kategori' => 'Multimedia',
         ]);

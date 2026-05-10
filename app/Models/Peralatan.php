@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany; // Tambahan Tipe Relasi
 
 class Peralatan extends Model
 {
@@ -15,13 +16,11 @@ class Peralatan extends Model
     protected $fillable = [
         'kode_alat',
         'nama_alat',
-        'stok',
-        'total_aset',
+        'total_aset', // 'stok' dihapus
         'kategori',
     ];
 
-    // Relasi: Satu alat bisa ada di banyak detail peminjaman
-    public function detailPeminjaman()
+    public function detailPeminjaman(): HasMany
     {
         return $this->hasMany(DetailPeminjamanAlat::class, 'peralatan_id', 'peralatan_id');
     }

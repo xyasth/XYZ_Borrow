@@ -10,32 +10,18 @@ class UserController extends Controller
 {
     public function index()
     {
-        // Hanya ambil user dengan role mahasiswa dan dosen untuk manajemen peminjam
-        $users = \App\Models\User::whereIn('jenis_akun', ['mahasiswa', 'dosen'])->get();
+        $users = User::whereIn('jenis_akun', ['mahasiswa', 'dosen'])->get();
         return view('users.index', compact('users'));
     }
 
     public function store(Request $request)
     {
-        if ($request->has('peralatan')) {
-            $cleanedPeralatan = array_filter($request->peralatan, function ($item) {
-                return !empty($item['id']) && !empty($item['jumlah']); // Hanya ambil yang diisi
-            });
-
-            if (empty($cleanedPeralatan)) {
-                // Hapus sepenuhnya dari request jika kosong
-                $request->request->remove('peralatan');
-            } else {
-                // Timpa dengan data yang sudah bersih dari baris kosong
-                $request->merge(['peralatan' => $cleanedPeralatan]);
-            }
-        }
-
+        // LOGIKA PERALATAN DIHAPUS SEPENUHNYA KARENA BUKAN TANGGUNG JAWAB USERCONTROLLER
 
         $validated = $request->validate([
             'nama' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'nomor_induk' => 'required|unique:users,nomor_induk', // NIM atau NIK
+            'nomor_induk' => 'required|unique:users,nomor_induk',
             'nomor_hp' => 'required|string',
             'jenis_akun' => 'required|in:mahasiswa,dosen,admin',
             'password' => 'required|min:6'
@@ -49,23 +35,33 @@ class UserController extends Controller
 
     public function edit($id)
     {
-        $user = \App\Models\User::findOrFail($id);
+        $user = User::findOrFail($id);
         return view('users.edit', compact('user'));
     }
 
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
-        $validated = $request->validate([
+
+        // Buat array rules dasar
+        $rules = [
             'nama' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $id . ',user_id',
             'nomor_induk' => 'required|unique:users,nomor_induk,' . $id . ',user_id',
-            'nomor_hp' => 'required',
+            'nomor_hp' => 'required|string',
             'jenis_akun' => 'required|in:mahasiswa,dosen,admin',
-        ]);
+        ];
 
+        // PERBAIKAN CELAH KEAMANAN: Masukkan validasi password ke dalam rules jika diisi
         if ($request->filled('password')) {
-            $validated['password'] = Hash::make($request->password);
+            $rules['password'] = 'required|min:6';
+        }
+
+        $validated = $request->validate($rules);
+
+        // Jika password lolos validasi (ada dan >= 6 karakter), lakukan hashing
+        if (isset($validated['password'])) {
+            $validated['password'] = Hash::make($validated['password']);
         }
 
         $user->update($validated);
@@ -75,7 +71,6 @@ class UserController extends Controller
     public function destroy($id)
     {
         $user = User::findOrFail($id);
-        // Proteksi: Jangan hapus user yang punya riwayat peminjaman
         if ($user->peminjaman()->exists()) {
             return redirect()->back()->with('error', 'User tidak bisa dihapus karena memiliki riwayat transaksi.');
         }

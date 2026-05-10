@@ -18,7 +18,6 @@ class PeralatanController extends Controller
         $validated = $request->validate([
             'kode_alat' => 'required|unique:peralatan,kode_alat',
             'nama_alat' => 'required|string',
-            'stok' => 'required|integer|min:0',
             'total_aset' => 'required|integer|min:1',
             'kategori' => 'required|string'
         ]);
@@ -39,7 +38,6 @@ class PeralatanController extends Controller
         $validated = $request->validate([
             'kode_alat' => 'required|unique:peralatan,kode_alat,' . $id . ',peralatan_id',
             'nama_alat' => 'required|string',
-            'stok' => 'required|integer|min:0',
             'total_aset' => 'required|integer|min:1',
             'kategori' => 'required|string'
         ]);

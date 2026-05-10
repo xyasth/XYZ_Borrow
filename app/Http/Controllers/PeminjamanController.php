@@ -150,7 +150,6 @@ class PeminjamanController extends Controller
     {
         $peminjaman = \App\Models\Peminjaman::findOrFail($id);
 
-        // Validasi: Catatan wajib diisi jika statusnya 'rejected'
         $request->validate([
             'status' => 'required|in:approved,rejected,finished',
             'catatan_admin' => 'nullable|string|required_if:status,rejected'
@@ -158,18 +157,30 @@ class PeminjamanController extends Controller
             'catatan_admin.required_if' => 'Alasan penolakan wajib diisi.'
         ]);
 
-        // Update data
-        $peminjaman->status = $request->status;
+        // STATE MACHINE LOGIC (Pertahanan Transisi Ilegal)
+        $statusLama = $peminjaman->status;
+        $statusBaru = $request->status;
+
+        if ($statusLama === 'pending' && !in_array($statusBaru, ['approved', 'rejected'])) {
+            return back()->withErrors("Dari Pending hanya bisa diubah menjadi Approved atau Rejected.");
+        }
+        if ($statusLama === 'approved' && $statusBaru !== 'finished') {
+            return back()->withErrors("Transaksi Approved hanya bisa diselesaikan (Finished).");
+        }
+        if (in_array($statusLama, ['rejected', 'finished'])) {
+            return back()->withErrors("Transaksi yang sudah Selesai/Ditolak tidak dapat diubah lagi.");
+        }
+
+        $peminjaman->status = $statusBaru;
         $peminjaman->catatan_admin = $request->catatan_admin;
 
-        // Jika status selesai, catat waktu kembali otomatis
-        if ($request->status === 'finished') {
+        if ($statusBaru === 'finished') {
             $peminjaman->waktu_kembali = now();
         }
 
         $peminjaman->save();
 
-        return back()->with('success', "Status transaksi #" . $id . " berhasil diubah menjadi " . strtoupper($request->status));
+        return back()->with('success', "Status transaksi #" . $id . " berhasil diubah menjadi " . strtoupper($statusBaru));
     }
     public function riwayat()
     {
